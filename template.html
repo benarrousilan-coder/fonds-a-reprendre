@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commerces liquidés à Paris</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Mise en page : registre public lisible — en-tête sobre, filtres collants, liste d'avis façon annonces légales, colonne d'action à droite */
+  --paper:#F4F6F8; --surface:#FFFFFF; --ink:#16233B; --muted:#5B6678; --line:#DCE1E8; --accent:#1F5FD1; --accent-ink:#FFFFFF; --soft:#E8EFFB;
+  --c-restaurants:#B4541F; --c-alimentation:#2E7D4F; --c-beaute:#8A3FA0; --c-boutiques:#1F5FD1;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1522; --surface:#172033; --ink:#E7ECF4; --muted:#9AA6B8; --line:#2A3650; --accent:#6D9CF5; --accent-ink:#0F1522; --soft:#1E2B45;
+    --c-restaurants:#E58A55; --c-alimentation:#5FBF86; --c-beaute:#C784DA; --c-boutiques:#6D9CF5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1522; --surface:#172033; --ink:#E7ECF4; --muted:#9AA6B8; --line:#2A3650; --accent:#6D9CF5; --accent-ink:#0F1522; --soft:#1E2B45;
+  --c-restaurants:#E58A55; --c-alimentation:#5FBF86; --c-beaute:#C784DA; --c-boutiques:#6D9CF5;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{border-bottom:1px solid var(--line);background:var(--surface)}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;flex-wrap:wrap}
+.logo{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.2px}
+.logo span{color:var(--accent)}
+.demo{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);padding:3px 8px;border-radius:4px}
+.hero{padding:28px 0 18px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.1;margin:0 0 10px;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+.lede strong{color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 4px}
+.tile{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:6px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.tile:hover{border-color:var(--c)}
+.tile[aria-pressed="true"]{background:var(--soft);border-color:var(--c)}
+.tile .n{font-family:var(--display);font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.tile .l{font-size:14px;color:var(--muted);margin-top:4px}
+.bar{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding:12px 0}
+.bar .wrap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bar input,.bar select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.bar input{flex:1 1 240px}
+.count{font-family:var(--mono);font-size:13px;color:var(--muted)}
+main.wrap{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:28px;padding-top:20px;padding-bottom:48px}
+.list{display:flex;flex-direction:column;gap:12px}
+.avis{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:6px;padding:14px 16px;display:grid;gap:6px}
+.avis .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.pill{font-family:var(--body);font-size:12px;font-weight:600;color:var(--c);border:1px solid var(--c);border-radius:999px;padding:1px 8px}
+.avis h3{margin:0;font-family:var(--display);font-size:20px;font-weight:600;line-height:1.2}
+.avis .act{margin:0;color:var(--muted);font-size:14px}
+.avis dl{margin:4px 0 0;display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:14px}
+.avis dt{color:var(--muted)}
+.avis dd{margin:0}
+.avis .link{font-size:14px;font-weight:500}
+.more{font:inherit;font-weight:600;padding:10px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer;justify-self:start}
+.empty{padding:20px;background:var(--surface);border:1px dashed var(--line);border-radius:6px;color:var(--muted)}
+aside{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:72px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px}
+.box h2{font-family:var(--display);font-size:20px;margin:0 0 8px;font-weight:600}
+.cta{border:2px solid var(--accent)}
+.cta p{margin:0 0 10px;font-size:14px;color:var(--muted)}
+.price{font-family:var(--display);font-size:26px;font-weight:700}
+.price small{font-family:var(--body);font-size:14px;font-weight:400;color:var(--muted)}
+form{display:grid;gap:8px}
+label{font-size:13px;font-weight:600}
+form input,form select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%}
+.btn{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:10px 12px;cursor:pointer}
+.notice{font-size:13px;background:var(--soft);border-radius:6px;padding:8px 10px;margin:0}
+ol.steps{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px}
+footer{border-top:1px solid var(--line);padding:20px 0 32px;color:var(--muted);font-size:13px}
+footer p{max-width:80ch;margin:0 0 8px}
+@media (max-width:900px){
+  main.wrap{grid-template-columns:1fr}
+  aside{position:static}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:420px){ .avis dl{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:no-preference){ .avis{transition:border-color .15s} }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap brand">
+  <div class="logo">Fonds<span>àReprendre</span></div>
+  <div class="demo">Version de démonstration</div>
+</div></header>
+
+<section class="wrap hero">
+  <h1>Commerces mis en liquidation à Paris et en petite couronne</h1>
+  <p class="lede" id="lede"></p>
+  <div class="tiles" id="tiles"></div>
+</section>
+
+<div class="bar"><div class="wrap">
+  <input id="q" type="search" placeholder="Rechercher un nom, une ville, un code postal, une activité" aria-label="Rechercher">
+  <select id="dep" aria-label="Département">
+    <option value="">Tous les départements</option>
+    <option value="75">75 · Paris</option>
+    <option value="92">92 · Hauts-de-Seine</option>
+    <option value="93">93 · Seine-Saint-Denis</option>
+    <option value="94">94 · Val-de-Marne</option>
+  </select>
+  <span class="count" id="count"></span>
+</div></div>
+
+<main class="wrap">
+  <section>
+    <div class="list" id="list"></div>
+  </section>
+  <aside>
+    <div class="box cta">
+      <h2>Soyez prévenu avant les autres</h2>
+      <p>Chaque lundi, les nouvelles liquidations de votre métier et de votre secteur, directement dans votre boîte mail.</p>
+      <div class="price">15 € <small>/ mois, sans engagement</small></div>
+      <form id="alert">
+        <label for="a-cat">Métier</label>
+        <select id="a-cat"></select>
+        <label for="a-dep">Département</label>
+        <select id="a-dep">
+          <option>75 · Paris</option><option>92 · Hauts-de-Seine</option><option>93 · Seine-Saint-Denis</option><option>94 · Val-de-Marne</option>
+        </select>
+        <label for="a-mail">E-mail</label>
+        <input id="a-mail" type="email" required placeholder="vous@exemple.fr">
+        <button class="btn" type="submit">Créer mon alerte</button>
+        <p class="notice" id="a-msg" hidden>Démonstration : l'inscription et le paiement seront activés au lancement du site. Aucune donnée n'a été enregistrée.</p>
+      </form>
+    </div>
+    <div class="box">
+      <h2>Racheter un commerce liquidé</h2>
+      <ol class="steps">
+        <li>Contactez le liquidateur indiqué dans l'avis : c'est lui qui vend le fonds (bail, matériel, clientèle).</li>
+        <li>Demandez le cahier des charges et la date limite de dépôt des offres.</li>
+        <li>Visitez le local et chiffrez la remise en route.</li>
+        <li>Déposez votre offre. Le paiement se fait comptant, sans prêt bancaire, mais vous ne reprenez pas les dettes.</li>
+      </ol>
+    </div>
+  </aside>
+</main>
+
+<footer><div class="wrap">
+  <p>Source : annonces officielles du BODACC (procédures collectives), sociétés uniquement. L'adresse affichée est celle du siège social, qui n'est pas toujours celle du local commercial.</p>
+  <p>Une liquidation ne garantit pas que le fonds sera mis en vente. Vérifiez toujours auprès du liquidateur. Ce site ne donne pas de conseil juridique.</p>
+</div></footer>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('data').textContent);
+  var A = D.annonces, CATS = D.cats, LAB = {};
+  CATS.forEach(function(c){ LAB[c[0]] = c[1]; });
+  var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  function fd(s){ if(!s) return ''; var p=s.split('-'); return ((+p[2])===1?'1er':(+p[2]))+' '+MOIS[+p[1]-1]+' '+p[0]; }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function cut(s,n){ s=s||''; return s.length>n ? s.slice(0,n).replace(/\s+\S*$/,'')+'…' : s; }
+  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  A.forEach(function(a){ a._t = norm([a.nom,a.ville,a.cp,a.activite,a.rue].join(' ')); });
+
+  document.getElementById('lede').innerHTML = '<strong>'+A.length+' commerces</strong> placés en liquidation judiciaire, avis publiés du '+fd(D.periode[0])+' au '+fd(D.periode[1])+'. Données publiques du BODACC, mises à jour chaque lundi.';
+
+  var state = {cat:'', dep:'', q:'', shown:30};
+  var tiles = document.getElementById('tiles');
+  CATS.forEach(function(c){
+    var n = A.filter(function(a){return a.cat===c[0];}).length;
+    var b = document.createElement('button');
+    b.className='tile'; b.type='button'; b.setAttribute('aria-pressed','false');
+    b.style.setProperty('--c','var(--c-'+c[0]+')');
+    b.innerHTML = '<div class="n">'+n+'</div><div class="l">'+esc(c[1])+'</div>';
+    b.onclick = function(){ state.cat = state.cat===c[0] ? '' : c[0]; state.shown=30; render(); };
+    b.dataset.cat = c[0];
+    tiles.appendChild(b);
+  });
+  var acat = document.getElementById('a-cat');
+  CATS.forEach(function(c){ var o=document.createElement('option'); o.textContent=c[1]; acat.appendChild(o); });
+
+  document.getElementById('q').oninput = function(e){ state.q = norm(e.target.value.trim()); state.shown=30; render(); };
+  document.getElementById('dep').onchange = function(e){ state.dep = e.target.value; state.shown=30; render(); };
+  document.getElementById('alert').onsubmit = function(e){ e.preventDefault(); document.getElementById('a-msg').hidden=false; };
+
+  function render(){
+    Array.prototype.forEach.call(tiles.children,function(b){ b.setAttribute('aria-pressed', b.dataset.cat===state.cat ? 'true':'false'); });
+    var r = A.filter(function(a){
+      return (!state.cat || a.cat===state.cat) && (!state.dep || a.dep===state.dep) && (!state.q || a._t.indexOf(state.q)>=0);
+    });
+    document.getElementById('count').textContent = r.length + ' résultat' + (r.length>1?'s':'');
+    var list = document.getElementById('list');
+    if(!r.length){ list.innerHTML = '<div class="empty">Aucun commerce ne correspond. Essayez un autre métier ou un autre département.</div>'; return; }
+    list.innerHTML = r.slice(0,state.shown).map(function(a){
+      return '<article class="avis" style="--c:var(--c-'+a.cat+')">'+
+        '<div class="meta"><span class="pill">'+esc(LAB[a.cat])+'</span><span>Publié le '+fd(a.date_pub)+'</span><span>Jugement du '+fd(a.date_jugement)+'</span></div>'+
+        '<h3>'+esc(a.nom)+'</h3>'+
+        '<p class="act">'+esc(cut(a.activite,170))+'</p>'+
+        '<dl><dt>Siège</dt><dd>'+esc([a.rue, a.cp+' '+a.ville].filter(Boolean).join(', '))+'</dd>'+
+        '<dt>Liquidateur</dt><dd>'+esc(a.liquidateur || 'Voir l’avis officiel')+'</dd></dl>'+
+        '<a class="link" href="'+esc(a.url)+'" target="_blank" rel="noopener">Voir l’avis officiel au BODACC</a>'+
+      '</article>';
+    }).join('') + (r.length>state.shown ? '<button class="more" id="more" type="button">Afficher 30 commerces de plus ('+(r.length-state.shown)+' restants)</button>' : '');
+    var m = document.getElementById('more');
+    if(m) m.onclick = function(){ state.shown += 30; render(); };
+  }
+  render();
+})();
+</script>
+</body>
+</html>
