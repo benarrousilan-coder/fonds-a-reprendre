@@ -1,0 +1,47 @@
+name: Mise a jour hebdomadaire du site
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"   # chaque lundi a 6h (heure de Paris en hiver)
+  workflow_dispatch:       # bouton "Run workflow" pour lancer a la main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Telecharger les liquidations des 35 derniers jours (BODACC)
+        run: |
+          DEBUT=$(date -d '35 days ago' +%F)
+          curl --fail --retry 3 -sS -G \
+            "https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/exports/csv" \
+            --data-urlencode "where=familleavis=\"collective\" and (numerodepartement=\"75\" or numerodepartement=\"92\" or numerodepartement=\"93\" or numerodepartement=\"94\") and dateparution>=date'${DEBUT}'" \
+            --data-urlencode "order_by=dateparution desc" \
+            -o annonces.csv
+          wc -l annonces.csv
+
+      - name: Construire le site
+        run: |
+          mkdir -p site
+          python3 prepare.py annonces.csv data.json
+          python3 build.py data.json template.html site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
