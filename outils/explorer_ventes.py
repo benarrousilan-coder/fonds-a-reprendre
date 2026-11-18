@@ -18,7 +18,7 @@ for i in range(0, len(sirens), 40):
     r = get({"where": w, "limit": 100})
     hits += r["results"]
 print("SOCIETES TESTEES :", len(sirens), "AVIS DE VENTE TROUVES :", len(hits),
-      "SOCIETES AVEC AU MOINS UN :", len({h["registre"] for h in hits}))
+      "SOCIETES AVEC AU MOINS UN :", len({tuple(h["registre"]) for h in hits}))
 import re
 avec_prix = 0
 for h in hits:
