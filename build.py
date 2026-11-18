@@ -1,4 +1,163 @@
-import json,sys
-d=open(sys.argv[1]).read().replace('</','<\\/')
-t=open(sys.argv[2]).read().replace('__DATA__',d)
-open(sys.argv[3],'w').write(t)
+"""Construit le site statique : une page France, une page par département,
+une page par département et par métier, plus sitemap.xml et robots.txt.
+
+Usage : python3 build.py data.json template.html site/
+Variables d'environnement :
+  BASE_URL   adresse publique du site (pour Google), ex. https://exemple.fr
+  ROOT_PATH  chemin du site sur ce domaine, ex. /fonds-a-reprendre/ ou /
+"""
+import collections, datetime, html, json, os, re, sys, unicodedata
+
+data = json.load(open(sys.argv[1]))
+tpl = open(sys.argv[2]).read()
+out = sys.argv[3]
+BASE_URL = os.environ.get("BASE_URL", "https://benarrousilan-coder.github.io").rstrip("/")
+ROOT = os.environ.get("ROOT_PATH", "/fonds-a-reprendre/")
+if not ROOT.endswith("/"):
+    ROOT += "/"
+
+A = data["annonces"]
+CATS = [tuple(c) for c in data["cats"]]
+LAB = dict(CATS)
+PHRASE = {
+    "restaurants": "Restaurants, cafés et bars",
+    "alimentation": "Boulangeries et commerces alimentaires",
+    "beaute": "Salons de coiffure et instituts de beauté",
+    "boutiques": "Boutiques et commerces de détail",
+}
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
+        "septembre", "octobre", "novembre", "décembre"]
+
+
+def fd(s):
+    if not s:
+        return ""
+    y, m, d = s.split("-")
+    d = int(d)
+    return ("1er" if d == 1 else str(d)) + " " + MOIS[int(m) - 1] + " " + y
+
+
+def e(s):
+    return html.escape(str(s or ""), quote=True)
+
+
+def slug(s):
+    s = unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+def dep_key(code):
+    m = re.match(r"(\d+)", code)
+    return (int(m.group(1)) if m else 999, code)
+
+
+deps = collections.OrderedDict()
+for a in sorted(A, key=lambda a: dep_key(a["dep"])):
+    deps.setdefault(a["dep"], {"nom": a.get("dep_nom") or a["dep"], "items": []})["items"].append(a)
+for code, d in deps.items():
+    d["path"] = f"{code.lower()}-{slug(d['nom'])}/"
+
+updated = fd(datetime.date.today().isoformat())
+periode = f"avis publiés du {fd(data['periode'][0])} au {fd(data['periode'][1])}"
+
+
+def card(a):
+    adr = ", ".join(x for x in [a.get("rue", ""), f"{a.get('cp', '')} {a.get('ville', '')}".strip()] if x)
+    act = a.get("activite", "")
+    if len(act) > 170:
+        act = act[:170].rsplit(" ", 1)[0] + "…"
+    return (f'<article class="avis" style="--c:var(--c-{a["cat"]})">'
+            f'<div class="meta"><span class="pill">{e(LAB[a["cat"]])}</span>'
+            f'<span>Publié le {e(fd(a["date_pub"]))}</span><span>Jugement du {e(fd(a["date_jugement"]))}</span></div>'
+            f'<h3>{e(a["nom"])}</h3><p class="act">{e(act)}</p>'
+            f'<dl><dt>Siège</dt><dd>{e(adr)}</dd><dt>Liquidateur</dt><dd>{e(a.get("liquidateur") or "Voir l’avis officiel")}</dd></dl>'
+            f'<a class="link" href="{e(a["url"])}" target="_blank" rel="noopener">Voir l’avis officiel au BODACC</a></article>')
+
+
+def tiles(items, dep=None, current=None):
+    cnt = collections.Counter(a["cat"] for a in items)
+    parts = []
+    for k, lab in CATS:
+        inner = f'<div class="n">{cnt.get(k, 0)}</div><div class="l">{e(lab)}</div>'
+        cls = "tile on" if k == current else "tile"
+        if dep and cnt.get(k):
+            parts.append(f'<a class="{cls}" style="--c:var(--c-{k})" href="{ROOT}{deps[dep]["path"]}{k}/">{inner}</a>')
+        else:
+            parts.append(f'<div class="{cls}" style="--c:var(--c-{k})">{inner}</div>')
+    return '<div class="tiles">' + "".join(parts) + "</div>"
+
+
+def opt_cats(current=None):
+    return "".join(f'<option{" selected" if k == current else ""}>{e(l)}</option>' for k, l in CATS)
+
+
+def opt_deps(current=None):
+    opts = "".join(f'<option value="{e(c)}">{e(c)} · {e(d["nom"])}</option>' for c, d in deps.items())
+    return opts
+
+
+def page(path, title, desc, h1, lede, crumbs, tiles_html, cards_html, before="", sidenav="", cur_cat=None, cur_dep=None):
+    s = tpl
+    rep = {
+        "__TITLE__": e(title), "__DESC__": e(desc), "__CANON__": e(BASE_URL + ROOT + path),
+        "__ROOT__": ROOT, "__UPDATED__": e(updated), "__CRUMBS__": crumbs, "__H1__": e(h1),
+        "__LEDE__": lede, "__TILES__": tiles_html, "__BEFORE__": before, "__CARDS__": cards_html,
+        "__SIDENAV__": sidenav, "__OPT_CATS__": opt_cats(cur_cat), "__OPT_DEPS__": opt_deps(),
+    }
+    for k, v in rep.items():
+        s = s.replace(k, v)
+    if cur_dep:
+        s = s.replace('<select id="a-dep">', f'<select id="a-dep" data-current="{e(cur_dep)}">', 1)
+    dest = os.path.join(out, path, "index.html")
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    open(dest, "w").write(s)
+    urls.append(BASE_URL + ROOT + path)
+
+
+urls = []
+os.makedirs(out, exist_ok=True)
+home = f'<a href="{ROOT}">France</a>'
+
+# Page France
+latest = sorted(A, key=lambda a: a["date_pub"], reverse=True)[:60]
+dirgrid = ('<h2 class="sec">Par département</h2><ul class="dirgrid">' +
+           "".join(f'<li><a href="{ROOT}{d["path"]}"><span>{e(c)} · {e(d["nom"])}</span><span class="c">{len(d["items"])}</span></a></li>'
+                   for c, d in deps.items()) + '</ul><h2 class="sec">Les 60 dernières liquidations</h2>')
+page("", "Commerces en liquidation à reprendre en France | Le Radar des Reprises",
+     f"{len(A)} restaurants, boutiques, boulangeries et salons placés en liquidation judiciaire en France, avec le liquidateur à contacter. Mis à jour chaque lundi.",
+     "Commerces mis en liquidation en France",
+     f"<strong>{len(A)} commerces</strong> placés en liquidation judiciaire, {periode}. Choisissez votre département pour voir tous les commerces près de chez vous.",
+     "France", tiles(A), "".join(card(a) for a in latest), before=dirgrid)
+
+# Pages département et département × métier
+for code, d in deps.items():
+    items = sorted(d["items"], key=lambda a: a["date_pub"], reverse=True)
+    nom = d["nom"]
+    side = (f'<div class="box"><h2>Par métier</h2><ul class="deps">' +
+            "".join(f'<li><a href="{ROOT}{d["path"]}{k}/">{e(l)}</a><span class="c">{sum(1 for a in items if a["cat"] == k)}</span></li>'
+                    for k, l in CATS if any(a["cat"] == k for a in items)) +
+            f'</ul><p style="margin:10px 0 0;font-size:14px"><a href="{ROOT}">Tous les départements</a></p></div>')
+    page(d["path"], f"Commerces en liquidation : {nom} ({code}) | Le Radar des Reprises",
+         f"{len(items)} commerces en liquidation judiciaire dans le département {nom} ({code}) : restaurants, boutiques, boulangeries, salons. Liquidateur à contacter pour chaque fonds.",
+         f"Commerces en liquidation : {nom} ({code})",
+         f"<strong>{len(items)} commerces</strong> placés en liquidation judiciaire dans le département {e(nom)}, {periode}.",
+         f'{home} › {e(nom)}', tiles(items, code), "".join(card(a) for a in items),
+         sidenav=side, cur_dep=code)
+    for k, lab in CATS:
+        sub = [a for a in items if a["cat"] == k]
+        if not sub:
+            continue
+        page(d["path"] + k + "/", f"{PHRASE[k]} en liquidation : {nom} ({code}) | Le Radar des Reprises",
+             f"{len(sub)} {PHRASE[k].lower()} en liquidation judiciaire dans le département {nom} ({code}), avec le liquidateur à contacter pour racheter le fonds.",
+             f"{PHRASE[k]} en liquidation : {nom} ({code})",
+             f"<strong>{len(sub)} commerces</strong> de ce métier placés en liquidation judiciaire dans le département {e(nom)}, {periode}.",
+             f'{home} › <a href="{ROOT}{d["path"]}">{e(nom)}</a> › {e(lab)}',
+             tiles(items, code, k), "".join(card(a) for a in sub),
+             sidenav=side, cur_cat=k, cur_dep=code)
+
+today = datetime.date.today().isoformat()
+open(os.path.join(out, "sitemap.xml"), "w").write(
+    '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    "".join(f"  <url><loc>{html.escape(u)}</loc><lastmod>{today}</lastmod></url>\n" for u in urls) + "</urlset>\n")
+open(os.path.join(out, "robots.txt"), "w").write(f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}{ROOT}sitemap.xml\n")
+print(f"{len(urls)} pages, {len(deps)} départements, {len(A)} commerces")

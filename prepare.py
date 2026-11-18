@@ -45,6 +45,7 @@ for r in rows:
         "cp": ad.get('codePostal') or r['cp'],
         "ville": ad.get('ville') or r['ville'],
         "dep": r['numerodepartement'],
+        "dep_nom": r.get('departement_nom_officiel', '') or r['numerodepartement'],
         "date_jugement": j.get('date', ''),
         "date_pub": r['dateparution'],
         "nature": j.get('nature'),
