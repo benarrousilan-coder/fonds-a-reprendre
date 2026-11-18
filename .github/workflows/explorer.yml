@@ -1,0 +1,11 @@
+name: Exploration (manuel)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  explorer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 outils/explorer_ventes.py outils/sirens_test.json
