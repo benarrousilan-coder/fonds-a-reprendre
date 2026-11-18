@@ -61,6 +61,54 @@ updated = fd(datetime.date.today().isoformat())
 periode = f"avis publiés du {fd(data['periode'][0])} au {fd(data['periode'][1])}"
 
 
+ANALYSE = os.environ.get("ANALYSE", "0") == "1"
+
+
+def eur(v):
+    return f"{int(round(v)):,}".replace(",", "\u202f") + "\u00a0€"
+
+
+def analyse(a):
+    ach, cp, dep = a.get("achat"), a.get("comp_cp"), a.get("comp_dep")
+    comp, zone = (cp, f"le code postal {a.get('cp')}") if cp else (dep, f"le département {a.get('dep_nom') or a['dep']}")
+    if not ach and not comp:
+        return ""
+    metier = PHRASE[a["cat"]].lower()
+    parts = ['<div class="ana"><div class="ana-h">Analyse du fonds</div>']
+    prix = ach.get("prix") if ach else None
+    if ach:
+        quoi = "Droit au bail acheté" if ach.get("nature") == "droit au bail" else "Fonds acheté"
+        montant = f" <strong>{eur(prix)}</strong>" if prix else " (prix non publié)"
+        parts.append(f'<p class="ana-l">{quoi}{montant} par la société liquidée, avis du {e(fd(ach["date"]))}. '
+                     f'<a href="{e(ach.get("url"))}" target="_blank" rel="noopener">Voir l’avis de vente</a></p>')
+    if comp:
+        top = max(comp["p75"] * 1.25, (prix or 0) * 1.1, 1)
+        step = 10 ** max(3, len(str(int(top))) - 1)
+        top = -(-top // step) * step
+        x = lambda v: max(0, min(100, v / top * 100))
+        mark = (f'<span class="ana-m" style="left:{x(prix):.1f}%" title="Prix d’achat"></span>' if prix else "")
+        parts.append(
+            f'<div class="ana-bar" role="img" aria-label="Fourchette de prix de {eur(comp["p25"])} à {eur(comp["p75"])}">'
+            f'<span class="ana-band" style="left:{x(comp["p25"]):.1f}%;width:{x(comp["p75"]) - x(comp["p25"]):.1f}%"></span>'
+            f'<span class="ana-med" style="left:{x(comp["med"]):.1f}%"></span>{mark}</div>'
+            f'<div class="ana-ax"><span>0</span><span class="ana-lg"><i class="lg-b"></i>moitié des ventes <i class="lg-m"></i>médiane'
+            + (' <i class="lg-p" style="background:var(--c)"></i>prix d’achat' if prix else '') + f'</span><span>{eur(top)}</span></div>'
+            f'<p class="ana-l">Dans {e(zone)}, la moitié des {e(metier)} vendus ces 24 derniers mois sont partis entre '
+            f'<strong>{eur(comp["p25"])}</strong> et <strong>{eur(comp["p75"])}</strong> '
+            f'(prix médian {eur(comp["med"])}, {comp["n"]} ventes publiées au BODACC).</p>')
+        if prix:
+            if prix < comp["p25"]:
+                lec = "Il avait été acheté moins cher que la plupart des fonds comparables."
+            elif prix > comp["p75"]:
+                lec = "Il avait été acheté plus cher que la plupart des fonds comparables."
+            else:
+                lec = "Il avait été acheté dans la fourchette habituelle du secteur."
+            parts.append(f'<p class="ana-l ana-r">{lec}</p>')
+        parts.append('<p class="ana-n">Ces prix concernent des fonds vendus en activité. Un fonds cédé par un liquidateur est souvent à l’arrêt, ce qui pèse sur son prix.</p>')
+    parts.append("</div>")
+    return "".join(parts)
+
+
 def card(a):
     adr = ", ".join(x for x in [a.get("rue", ""), f"{a.get('cp', '')} {a.get('ville', '')}".strip()] if x)
     act = a.get("activite", "")
@@ -71,6 +119,7 @@ def card(a):
             f'<span>Publié le {e(fd(a["date_pub"]))}</span><span>Jugement du {e(fd(a["date_jugement"]))}</span></div>'
             f'<h3>{e(a["nom"])}</h3><p class="act">{e(act)}</p>'
             f'<dl><dt>Siège</dt><dd>{e(adr)}</dd><dt>Liquidateur</dt><dd>{e(a.get("liquidateur") or "Voir l’avis officiel")}</dd></dl>'
+            + (analyse(a) if ANALYSE else "") +
             f'<a class="link" href="{e(a["url"])}" target="_blank" rel="noopener">Voir l’avis officiel au BODACC</a></article>')
 
 
