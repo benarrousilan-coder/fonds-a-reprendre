@@ -105,7 +105,11 @@ def abonnes():
         fields = {}
         for f in cs.get("custom_fields") or []:
             val = (f.get("dropdown") or {}).get("value") or (f.get("text") or {}).get("value") or ""
-            fields[f.get("key", "")] = val
+            lab = ((f.get("label") or {}).get("custom") or "").lower() + " " + (f.get("key") or "").lower()
+            if "tier" in lab:          # « Métier » / metier
+                fields["metier"] = val
+            elif "part" in lab:        # « Départements » / departements
+                fields["departements"] = val
         email = (cs.get("customer_details") or {}).get("email")
         if email:
             out.append({"email": email, "metier": norm_metier(fields.get("metier")),
