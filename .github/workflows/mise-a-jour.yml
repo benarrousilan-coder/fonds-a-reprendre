@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "0 5 * * 1"   # chaque lundi a 6h (heure de Paris en hiver)
   workflow_dispatch:       # bouton "Run workflow" pour lancer a la main
+    inputs:
+      alertes:
+        description: "Alertes : non = ne rien envoyer, test = apercu sans envoi, oui = envoyer aux abonnes"
+        default: "non"
 
 permissions:
   contents: read
@@ -20,6 +24,8 @@ jobs:
     env:
       BASE_URL: https://benarrousilan-coder.github.io
       ROOT_PATH: /fonds-a-reprendre/
+      STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
+      BREVO_KEY: ${{ secrets.BREVO_KEY }}
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -39,6 +45,7 @@ jobs:
       - name: Construire le site
         run: |
           python3 prepare.py annonces.csv data.json
+          python3 enrich.py data.json data.json
           python3 build.py data.json template.html site
 
       - uses: actions/configure-pages@v5
@@ -47,3 +54,10 @@ jobs:
           path: site
       - id: deploy
         uses: actions/deploy-pages@v4
+
+      - name: Envoyer les alertes aux abonnes
+        if: ${{ (github.event_name == 'schedule' || inputs.alertes == 'oui' || inputs.alertes == 'test') && env.STRIPE_KEY != '' }}
+        env:
+          SITE_URL: ${{ env.BASE_URL }}${{ env.ROOT_PATH }}
+          DRY_RUN: ${{ inputs.alertes == 'test' && '1' || '0' }}
+        run: python3 alertes.py data.json

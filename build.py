@@ -17,6 +17,9 @@ if not ROOT.endswith("/"):
     ROOT += "/"
 
 A = data["annonces"]
+CFG = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")))
+ED = CFG.get("editeur", {})
+PRIX = CFG.get("prix_mensuel", 29)
 CATS = [tuple(c) for c in data["cats"]]
 LAB = dict(CATS)
 PHRASE = {
@@ -145,18 +148,31 @@ def opt_deps(current=None):
     return opts
 
 
-def page(path, title, desc, h1, lede, crumbs, tiles_html, cards_html, before="", sidenav="", cur_cat=None, cur_dep=None):
+def cta():
+    pts = ("<ul><li>Chaque lundi, les nouvelles liquidations de votre métier et de vos départements</li>"
+           "<li>Pour chaque commerce : le prix d’achat du fonds quand il a été publié, et les prix de vente du quartier</li>"
+           "<li>Le liquidateur à contacter, avant l’annonce de vente</li></ul>")
+    head = ('<div class="box cta"><h2>Soyez prévenu avant l’annonce de vente</h2>'
+            '<p>Un commerce liquidé n’est souvent mis en vente que des semaines plus tard, et les repreneurs n’ont parfois que deux semaines '
+            'pour déposer leur offre une fois l’annonce publiée.</p>' + pts +
+            f'<div class="price">{PRIX} € <small>/ mois, sans engagement</small></div>')
+    if CFG.get("lien_paiement"):
+        return head + f'<a class="btn" href="{e(CFG["lien_paiement"])}" target="_blank" rel="noopener">S’abonner à l’alerte</a></div>'
+    return head + '<p class="notice">Les abonnements ouvrent très bientôt.</p></div>'
+
+
+def page(path, title, desc, h1, lede, crumbs, tiles_html, cards_html, before="", sidenav="", cur_cat=None, cur_dep=None, legal=False):
     s = tpl
     rep = {
         "__TITLE__": e(title), "__DESC__": e(desc), "__CANON__": e(BASE_URL + ROOT + path),
         "__ROOT__": ROOT, "__UPDATED__": e(updated), "__CRUMBS__": crumbs, "__H1__": e(h1),
         "__LEDE__": lede, "__TILES__": tiles_html, "__BEFORE__": before, "__CARDS__": cards_html,
-        "__SIDENAV__": sidenav, "__OPT_CATS__": opt_cats(cur_cat), "__OPT_DEPS__": opt_deps(),
+        "__SIDENAV__": sidenav, "__CTA__": cta(),
     }
     for k, v in rep.items():
         s = s.replace(k, v)
-    if cur_dep:
-        s = s.replace('<select id="a-dep">', f'<select id="a-dep" data-current="{e(cur_dep)}">', 1)
+    if legal:
+        s = re.sub(r'<div class="bar">.*?</div></div>', '', s, count=1, flags=re.S)
     dest = os.path.join(out, path, "index.html")
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     open(dest, "w").write(s)
@@ -203,6 +219,52 @@ for code, d in deps.items():
              f'{home} › <a href="{ROOT}{d["path"]}">{e(nom)}</a> › {e(lab)}',
              tiles(items, code, k), "".join(card(a) for a in sub),
              sidenav=side, cur_cat=k, cur_dep=code)
+
+# Pages légales
+def v(x, defaut="[à compléter]"):
+    return e(x) if x else defaut
+
+
+LEGAL = {
+ "mentions-legales": ("Mentions légales", f"""
+<h2>Éditeur du site</h2>
+<p>{v(ED.get("nom"))}, {v(ED.get("statut"))}<br>SIRET : {v(ED.get("siret"))}<br>Adresse : {v(ED.get("adresse"))}<br>Contact : {v(ED.get("email"))}</p>
+<p>Directeur de la publication : {v(ED.get("nom"))}.</p>
+<h2>Hébergement</h2>
+<p>GitHub Inc. (GitHub Pages), 88 Colin P Kelly Jr Street, San Francisco, CA 94107, États-Unis.</p>
+<h2>Source des données</h2>
+<p>Les annonces proviennent du Bulletin officiel des annonces civiles et commerciales (BODACC), publié par la Direction de l’information légale et administrative (DILA) et réutilisé sous Licence Ouverte 2.0. Les données sont mises à jour chaque semaine ; la date de mise à jour figure en haut de chaque page. Le Radar des Reprises n’est pas affilié à la DILA ni au BODACC.</p>
+<p>Seules des sociétés (personnes morales) sont présentées. Les informations sont fournies à titre indicatif et ne constituent pas un conseil juridique, financier ou d’investissement.</p>"""),
+ "cgv": ("Conditions générales de vente", f"""
+<h2>Objet</h2>
+<p>Les présentes conditions régissent l’abonnement « Alerte » du site Le Radar des Reprises, édité par {v(ED.get("nom"))}. L’abonnement donne accès à un e-mail hebdomadaire listant les nouvelles liquidations judiciaires de commerces correspondant aux critères choisis (métier, départements), accompagnées d’une analyse indicative fondée sur des données publiques.</p>
+<h2>Prix et paiement</h2>
+<p>L’abonnement coûte {PRIX} € par mois. Il est payé par carte bancaire via Stripe, à la souscription puis chaque mois à la même date.</p>
+<h2>Durée et résiliation</h2>
+<p>L’abonnement est sans engagement. Il peut être résilié à tout moment depuis le lien « gérer mon abonnement » présent dans chaque e-mail ; la résiliation prend effet à la fin de la période mensuelle en cours.</p>
+<h2>Droit de rétractation</h2>
+<p>Le client consommateur dispose d’un délai de 14 jours à compter de la souscription pour se rétracter et être remboursé, en écrivant à {v(ED.get("email"))}.</p>
+<h2>Nature du service et responsabilité</h2>
+<p>Les informations proviennent de publications officielles et sont transmises en l’état. Elles peuvent comporter des erreurs ou être incomplètes ; une liquidation ne garantit pas la mise en vente du fonds. Les prix indiqués sont des repères statistiques, non une évaluation. L’éditeur ne fournit aucun conseil juridique ou financier et ne peut être tenu responsable des décisions prises sur la base de ces informations.</p>
+<h2>Contact et litiges</h2>
+<p>Pour toute question : {v(ED.get("email"))}. Les présentes conditions sont soumises au droit français.</p>"""),
+ "confidentialite": ("Politique de confidentialité", f"""
+<h2>Données collectées</h2>
+<p>Lors de l’abonnement : adresse e-mail, critères d’alerte (métier, départements) et informations de paiement. Les données de carte bancaire sont traitées uniquement par Stripe et ne sont jamais transmises à l’éditeur.</p>
+<h2>Utilisation</h2>
+<p>Ces données servent uniquement à envoyer l’alerte hebdomadaire et à gérer l’abonnement. Elles ne sont ni vendues ni louées.</p>
+<h2>Prestataires</h2>
+<p>Stripe (paiement et gestion des abonnements) et Brevo (envoi des e-mails) agissent comme sous-traitants. Le site est hébergé par GitHub Pages.</p>
+<h2>Durée de conservation</h2>
+<p>Les données sont conservées pendant la durée de l’abonnement, puis le temps nécessaire aux obligations comptables et légales.</p>
+<h2>Vos droits</h2>
+<p>Vous pouvez accéder à vos données, les rectifier ou en demander la suppression en écrivant à {v(ED.get("email"))}. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+<h2>Données publiées sur le site</h2>
+<p>Le site ne présente que des sociétés, à partir des annonces officielles du BODACC. Pour toute demande concernant une fiche, écrivez à {v(ED.get("email"))}.</p>"""),
+}
+for slugp, (titre, corps) in LEGAL.items():
+    page(slugp + "/", f"{titre} | Le Radar des Reprises", titre, titre, "", f'{home} › {e(titre)}', "", "",
+         before=f'<div class="legal">{corps}</div>', legal=True)
 
 today = datetime.date.today().isoformat()
 open(os.path.join(out, "sitemap.xml"), "w").write(

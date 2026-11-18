@@ -75,13 +75,14 @@ aside{display:flex;flex-direction:column;gap:16px;align-self:start}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px}
 .box h2{font-family:var(--display);font-size:20px;margin:0 0 8px;font-weight:600}
 .cta{border:2px solid var(--accent)}
+.cta ul{margin:0 0 12px;padding-left:18px;font-size:14px;display:grid;gap:4px}
 .cta p{margin:0 0 10px;font-size:14px;color:var(--muted)}
 .price{font-family:var(--display);font-size:26px;font-weight:700}
 .price small{font-family:var(--body);font-size:14px;font-weight:400;color:var(--muted)}
 form{display:grid;gap:8px}
 label{font-size:13px;font-weight:600}
 form input,form select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%}
-.btn{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:10px 12px;cursor:pointer}
+.btn{display:block;text-align:center;text-decoration:none;font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:10px 12px;cursor:pointer}
 .notice{font-size:13px;background:var(--soft);border-radius:6px;padding:8px 10px;margin:0}
 ol.steps{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px}
 .deps{columns:2;column-gap:16px;margin:0;padding:0;list-style:none;font-size:14px}
@@ -91,6 +92,9 @@ ol.steps{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px}
 .dirgrid a{display:flex;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 12px;text-decoration:none;color:var(--ink);font-size:15px}
 .dirgrid a:hover{border-color:var(--accent)}
 .dirgrid .c{font-family:var(--mono);color:var(--muted)}
+.legal{max-width:72ch;font-size:15px}
+.legal h2{font-family:var(--display);font-size:20px;margin:22px 0 6px}
+.legal p{margin:0 0 10px}
 h2.sec{font-family:var(--display);font-size:24px;margin:0 0 12px}
 .ana{border-top:1px dashed var(--line);margin-top:6px;padding-top:10px;display:grid;gap:6px}
 .ana-h{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.3px;text-transform:uppercase;color:var(--accent)}
@@ -144,21 +148,7 @@ footer p{max-width:80ch;margin:0 0 8px}
     <div class="list" id="list">__CARDS__</div>
   </section>
   <aside>
-    <div class="box cta">
-      <h2>Soyez prévenu avant l'annonce de vente</h2>
-      <p>Un commerce liquidé n'est souvent mis en vente que des semaines plus tard, et les repreneurs n'ont parfois que deux semaines pour déposer leur offre une fois l'annonce publiée. Recevez chaque lundi les nouvelles liquidations de votre métier et de votre département, pour contacter le liquidateur en premier.</p>
-      <div class="price">15 € <small>/ mois, sans engagement</small></div>
-      <form id="alert">
-        <label for="a-cat">Métier</label>
-        <select id="a-cat">__OPT_CATS__</select>
-        <label for="a-dep">Département</label>
-        <select id="a-dep">__OPT_DEPS__</select>
-        <label for="a-mail">E-mail</label>
-        <input id="a-mail" type="email" required placeholder="vous@exemple.fr">
-        <button class="btn" type="submit">Créer mon alerte</button>
-        <p class="notice" id="a-msg" hidden>Les alertes ouvrent très bientôt. Aucune donnée n'a été enregistrée.</p>
-      </form>
-    </div>
+    __CTA__
     __SIDENAV__
     <div class="box">
       <h2>Racheter un commerce liquidé</h2>
@@ -175,6 +165,7 @@ footer p{max-width:80ch;margin:0 0 8px}
 <footer><div class="wrap">
   <p>Source : annonces officielles du BODACC (procédures collectives), sociétés uniquement, avis publiés sur les 35 derniers jours. L'adresse affichée est celle du siège social, qui n'est pas toujours celle du local commercial.</p>
   <p>Une liquidation ne garantit pas que le fonds sera mis en vente. Vérifiez toujours auprès du liquidateur. Ce site ne donne pas de conseil juridique.</p>
+  <p><a href="__ROOT__mentions-legales/">Mentions légales</a> · <a href="__ROOT__cgv/">Conditions de vente</a> · <a href="__ROOT__confidentialite/">Confidentialité</a></p>
 </div></footer>
 
 <script>
@@ -200,9 +191,6 @@ footer p{max-width:80ch;margin:0 0 8px}
     if (match.length && empty) { empty.parentNode.removeChild(empty); }
   }
   document.getElementById('q').oninput = function(e){ q = norm(e.target.value.trim()); shown = STEP; render(); };
-  document.getElementById('alert').onsubmit = function(e){ e.preventDefault(); document.getElementById('a-msg').hidden = false; };
-  var pre = document.getElementById('a-dep').getAttribute('data-current');
-  if (pre) document.getElementById('a-dep').value = pre;
   render();
 })();
 </script>

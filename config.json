@@ -1,0 +1,13 @@
+{
+  "prix_mensuel": 29,
+  "lien_paiement": "",
+  "portail_client": "",
+  "expediteur": "",
+  "editeur": {
+    "nom": "",
+    "statut": "Entrepreneur individuel",
+    "siret": "",
+    "adresse": "",
+    "email": ""
+  }
+}
